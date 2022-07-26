@@ -1,0 +1,30 @@
+#!/usr/bin/env expect
+
+# login
+spawn sshpass -p1234 ssh suporte@189.42.248.178 -p 5066
+expect "\$ "
+
+send "sshpass -plab ssh lab@10.10.0.2\r"
+
+# setup
+expect "\> "
+send "en\r"
+expect "\# "
+send "terminal length 512\r"
+expect "\#"
+
+send "show running-config | include desc\r"
+expect "\#"
+
+# cable modem info
+send "show cable modem\r"
+expect "\#"
+
+# cable modem ip and mac table
+send "show cpe all\r"
+expect "\#"
+
+# cable modem physical info
+send "show cable modem phy\r"
+expect "\#"
+
