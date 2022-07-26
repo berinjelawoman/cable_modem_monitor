@@ -28,3 +28,6 @@ expect "\#"
 send "show cable modem phy\r"
 expect "\#"
 
+# cable modem packages get DS bytes and US bytes
+send "show cable modem counters\r"
+expect "\#"
