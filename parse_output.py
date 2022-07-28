@@ -1,13 +1,18 @@
 #%%
 import re  
+import time
+import json
 import pandas as pd
 from functools import reduce
 
 from typing import *
 
 
-with open("output.txt") as f:
-    text = f.readlines()
+def read_output() -> List[str]:
+    with open("output.txt") as f:
+        text = f.readlines()
+        
+    return text
 
 
 def get_output(command: str, text: List[str]) -> List[str]:
@@ -45,42 +50,93 @@ def get_config_output(text: List[str]) -> List[str]:
              for txt in text[start_index+1:end_index+1]]
     
 
+def convert_values(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Converts Room, Number, Ds Bytes and Us Bytes to int
+    Converts US_Pwr, US_SNR, DS_Pwr, DS_SNR to float
+    """
+    for column in ["Room", "Number", "Ds Bytes", "Us Bytes"]:
+        df[column] = pd.to_numeric(df[column], 
+            downcast="integer", errors="coerce")
 
-# %%
-config_out = get_config_output(text)
+    for column in ["US_Pwr", "US_SNR", "DS_Pwr", "DS_SNR"]:
+        df[column] = pd.to_numeric(df[column], 
+            downcast="float", errors="coerce")
 
-cm_out = get_output("show cable modem", text)
-cpe_out = get_output("show cpe all", text)
-phy_out = get_output("show cable modem phy", text)
-counters_out = get_output("show cable modem counters", text)
+    return df
 
-# the second element of these outputs is just a continuation
-# of the columns titles
-del cm_out[1]
-del phy_out[1]
 
-cm_targets = ["MAC Address", "IP Address", "MAC", "Online", "Number"]
-cpe_targets = ["CM MAC", "CPE IP Address"]
-phy_targets = ["MAC Address", "US_Pwr", "US_SNR", "DS_Pwr", "DS_SNR"]
-counters_targets = ["MAC Address", "Ds Bytes", "Us Bytes"]
+def save_df(df: pd.DataFrame) -> None:
+    """
+    Merges the dataframe into a timestamped json of the usage history.
+    """
 
-config_df = pd.DataFrame(config_out[1:], columns=config_out[0])
+    filename = "/var/www/monitor/test/files/df.json"
+    m_dict = {}
+    now = int(time.time())
+    m_dict[now] = df.to_dict("split")
 
-# the last character is a whitespace for some reason
-cm_df = pd.DataFrame(cm_out[1:], columns=cm_out[0][:-1])[cm_targets]
+    try:
+        with open(filename) as f:
+            data = json.load(f)
 
-phy_df = pd.DataFrame(phy_out[1:], columns=phy_out[0])[phy_targets]
-counters_df = pd.DataFrame(counters_out[1:], 
-    columns=counters_out[0])[counters_targets]
+        data.update(m_dict)
 
-# we need to change the CM Mac column to MAC Address
-cpe_df = pd.DataFrame(cpe_out[1:], columns=cpe_out[0])[cpe_targets]
-cpe_df.columns = ["MAC Address"] + cpe_targets[1:]
-cpe_df = cpe_df.groupby(cpe_df["MAC Address"]).aggregate(lambda s: s.tolist())
+    except FileNotFoundError:
+        data = m_dict
 
-# merge all dataframes into one
-df = reduce(lambda res, df: res.merge(df, how="left", on="MAC Address"),
-    [cm_df, phy_df, cpe_df, counters_df], config_df)
+    with open(filename, "w") as f:
+        json.dump(data, f)
+
+
+def main():
+    """
+    Runs the expect script and captures all its information.
+    """
+    text = read_output()
+    config_out = get_config_output(text)
+
+    cm_out = get_output("show cable modem", text)
+    cpe_out = get_output("show cpe all", text)
+    phy_out = get_output("show cable modem phy", text)
+    counters_out = get_output("show cable modem counters", text)
+
+    # the second element of these outputs is just a continuation
+    # of the columns titles
+    del cm_out[1]
+    del phy_out[1]
+
+    cm_targets = ["MAC Address", "IP Address", "MAC", "Online", "Number"]
+    cpe_targets = ["CM MAC", "CPE IP Address"]
+    phy_targets = ["MAC Address", "US_Pwr", "US_SNR", "DS_Pwr", "DS_SNR"]
+    counters_targets = ["MAC Address", "Ds Bytes", "Us Bytes"]
+
+    config_df = pd.DataFrame(config_out[1:], columns=config_out[0])
+
+    # the last character is a whitespace for some reason
+    cm_df = pd.DataFrame(cm_out[1:], columns=cm_out[0][:-1])[cm_targets]
+
+    phy_df = pd.DataFrame(phy_out[1:], columns=phy_out[0])[phy_targets]
+    counters_df = pd.DataFrame(counters_out[1:], 
+        columns=counters_out[0])[counters_targets]
+
+    # we need to change the CM Mac column to MAC Address
+    cpe_df = pd.DataFrame(cpe_out[1:], columns=cpe_out[0])[cpe_targets]
+    cpe_df.columns = ["MAC Address"] + cpe_targets[1:]
+    cpe_df = cpe_df.groupby(cpe_df["MAC Address"]).aggregate(lambda s: s.tolist())
+
+    # merge all dataframes into one
+    df = reduce(lambda res, df: res.merge(df, how="left", on="MAC Address"),
+        [cm_df, phy_df, cpe_df, counters_df], config_df)
+    df = convert_values(df)
+    df = df.fillna(-1)
+
+    save_df(df)
+
+
+#%%
+if __name__ == "__main__":
+    main()
 
 # %%
 # to monitor the cable modems use the command 
