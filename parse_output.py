@@ -74,7 +74,7 @@ def save_df(df: pd.DataFrame) -> None:
     filename = "/var/www/monitor/test/files/df.json"
     m_dict = {}
     now = int(time.time())
-    m_dict[now] = df.to_dict("split")
+    m_dict[now] = { column: df[column].tolist() for column in df.columns }
 
     try:
         with open(filename) as f:
