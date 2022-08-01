@@ -72,6 +72,7 @@ def save_df(df: pd.DataFrame) -> None:
     """
 
     filename = "/var/www/monitor/test/files/df.json"
+    filename_bk = "/var/www/monitor/test/files/df_bk.json"
     m_dict = {}
     now = int(time.time())
     m_dict[now] = { column: df[column].tolist() for column in df.columns }
@@ -86,6 +87,12 @@ def save_df(df: pd.DataFrame) -> None:
         data = m_dict
 
     with open(filename, "w") as f:
+        # keep only the 50 last records for the front end
+        m_data = { key: data[key] for key in list(data.keys())[-50:] }
+        json.dump(m_data, f)
+
+    # keep everything for the backup
+    with open(filename_bk, "w") as f:
         json.dump(data, f)
 
 
