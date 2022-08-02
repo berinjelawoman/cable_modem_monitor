@@ -1,0 +1,13 @@
+.graph-container {
+    display: flex;
+}
+
+#signal_pwr {
+    flex: 1;
+    width: 50%;
+}
+  
+#signal_snr {
+    flex: 1;
+    width: 50%;
+}
