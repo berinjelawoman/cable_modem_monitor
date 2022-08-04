@@ -1,7 +1,15 @@
-// globals
+const CONSTANTS = {
+    FLOOR_SELECTOR_DIV: document.getElementById("myForm")
+};
+
+
 let globals = {
     first: true,
-}
+    floors: [] // list of strings containing the floor numbers
+};
+
+
+
 let options = {
     pause: false
 };
@@ -16,8 +24,6 @@ function unix_to_date(timestamp) {
     return date;
 }
 
-
-let mdata;
 
 /**
  * Builds a network usage graph with the given data
@@ -38,8 +44,6 @@ function buildNetworkGraph(m_data, title, div_id) {
     let y = values.slice(1).map((_, i) => (values[i+1] - values[i]) / (keys[i+1] - keys[i]) / 125000);
     // add first known value to y
     y = [y[0], ...y];
-    
-    if (mdata===undefined) mdata = m_data;
 
     if (!globals.first) Plotly.update(div_id, {x: [x], y: [total_usage, y]});
     else { 
@@ -85,9 +89,13 @@ function buildNetworkGraph(m_data, title, div_id) {
 
 function buildPwrGraph(m_data, title, div_id, xaxis_title, yaxis_title, name1, name2) {
     let [us_pwr, ds_pwr] = [[], []]; 
+    
     Object.values(m_data).forEach((el) => {us_pwr.push(el[0]), ds_pwr.push(el[1])});
 
-    if (!globals.first) Plotly.update(div_id, {y: [us_pwr, ds_pwr]});
+    // the x values of the graph
+    let rooms = Object.keys(m_data).map((room) => "Room " + String(room));
+
+    if (!globals.first) Plotly.update(div_id, {x: [rooms], y: [us_pwr, ds_pwr]});
     else {
         // graph layout
         let layout = {
@@ -96,9 +104,6 @@ function buildPwrGraph(m_data, title, div_id, xaxis_title, yaxis_title, name1, n
             xaxis: { title: xaxis_title },
             yaxis: { title: yaxis_title }
         };
-
-        // the x values of the graph
-        let rooms = Object.keys(m_data).map((room) => "Room " + String(room));
 
         let trace1 = {
             x: rooms,
@@ -179,6 +184,45 @@ async function load_json() {
 function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
 
+function toggleFloor(element) {
+    let floor = element.value;
+    let i = globals.floors.indexOf(floor);
+
+    if (i >= 0) globals.floors.splice(i, 1);
+    else { 
+        globals.floors.push(floor); 
+        globals.floors.sort((a, b) => a - b); 
+    }
+}
+
+
+function getRoomFloor(room) {
+    let str_room = String(room);
+    return str_room.length <= 3 ? str_room.slice(0, 1) : str_room.slice(0, 2);
+}
+
+
+function createFloors(lastData) {
+    // save the floor information
+    let floors = lastData.Room
+        .map(getRoomFloor) // get floor number
+        .filter((v, i, a) => a.indexOf(v) === i); // remove duplicates
+    
+    floors.sort((a, b) => (a - b));
+
+    globals.floors = floors;
+
+    CONSTANTS.FLOOR_SELECTOR_DIV.innerHTML = floors.reduce((res, floor) => {
+        return res + `<label class="container">${floor}
+            <input type="checkbox" checked="checked" value="${floor}" onclick="toggleFloor(this)">
+            <span class="checkmark"></span>
+        </label>`
+    }, "") + `<br>
+    <button type="submit" class="btn">Confirmar</button>
+    <button type="button" class="btn cancel" onclick="closeForm()">Cancelar</button>`;
+}
+
+
 /**
  * run function every second
  * we do this because load_json is async
@@ -199,13 +243,28 @@ async function loop() {
             // last info
             let mkeys = Object.keys(data);
             let lastData = data[mkeys[mkeys.length - 1]];
+
+            // update the floors list
+            if (globals.first) createFloors(lastData);
+
             // get us and ds pwr
+            let targetRooms = lastData.Room.filter(room => {
+                let floor = getRoomFloor(room);
+                return globals.floors.includes(floor);
+            });
+            
             let pwr = {}
-            lastData.Room.forEach((room, i) => { pwr[room] = [lastData["US_Pwr"][i], lastData["DS_Pwr"][i]] });
+            targetRooms.forEach((room) => { 
+                let i = lastData.Room.indexOf(room);
+                pwr[room] = [lastData["US_Pwr"][i], lastData["DS_Pwr"][i]] 
+            });
             buildPwrGraph(pwr, "Pot\u00EAncia", "signal_pwr", "Quarto", "dB", "Us Pot\u00EAncia", "Ds Pot\u00EAncia");
             // get us and ds snr
             let snr = {}
-            lastData.Room.forEach((room, i) => { snr[room] = [lastData["US_SNR"][i], lastData["DS_SNR"][i]] });
+            targetRooms.forEach((room) => { 
+                let i = lastData.Room.indexOf(room);
+                snr[room] = [lastData["US_SNR"][i], lastData["DS_SNR"][i]] 
+            });
             buildPwrGraph(snr, "Rela\u00E7\u00E3o Sinal Ru\u00EDdo", "signal_snr", "Quarto", "dB", "Us SNR", "Ds SNR");
 
             addInfo(data);

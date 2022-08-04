@@ -2,15 +2,20 @@
     <head>
         <title>Cable Modem Monitor</title>
         <!-- CSS -->
+        <link rel="stylesheet" href="css/w3.css">
         <link rel="stylesheet" href="css/style.css">
-        <!-- Scripts -->
-        <script src='scripts/plotly.js'></script>
-        <script src="scripts/script.js"></script>
     </head>
     
     <body>
     
         <div id="net_usage"></div>
+
+        <button class="open-button" onclick="openForm()">Selecionar andares</button>
+        <div class="form-popup" id="myForm">
+              <button type="submit" class="btn">Confirmar</button>
+              <button type="button" class="btn cancel" onclick="closeForm()">Cancelar</button>
+        </div>
+          
         <div class='graph-container'>
             <div id="signal_pwr"></div>
             <div id="signal_snr"></div>
@@ -18,5 +23,20 @@
         
         <div id="info">info</div>
     
+
+        <!-- Scripts -->
+        <script src='scripts/plotly.js'></script>
+        <script src="scripts/script.js"></script>
+        <script>
+            function openForm() {
+                document.getElementById("myForm").style.display = "block";
+            }
+            
+            function closeForm() {
+                document.getElementById("myForm").style.display = "none";
+            }
+        </script>
+            
+
     </body>
 </html>
