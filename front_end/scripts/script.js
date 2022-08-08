@@ -1,5 +1,8 @@
 const CONSTANTS = {
-    FLOOR_SELECTOR_DIV: document.getElementById("myForm")
+    FLOOR_SELECTOR_DIV: document.getElementById("myForm"),
+    OFFLINE_MODAL: document.getElementById("myModal"),
+    OFFLINE_MODAL_BODY: document.getElementById("modalBody"),
+    OFFLINE_MODAL_HEADER: document.getElementById("modalHeaderTitle")
 };
 
 
@@ -38,14 +41,23 @@ function buildNetworkGraph(m_data, title, div_id) {
     let values = Object.values(m_data);
 
     let x = keys.map((key) => unix_to_date(key));
-    let total_usage = values.map((value) => value * 1e-9);  // convert to Gb
-    
-    
-    let y = values.slice(1).map((_, i) => (values[i+1] - values[i]) / (keys[i+1] - keys[i]) / 125000);
-    // add first known value to y
-    y = [y[0], ...y];
+ 
+    // connection total usage
+    let usage_up = keys.map(key => m_data[key]["Us Bytes"].filter(x => x > 0).reduce((x, y) => x + y, 0) );
+    let usage_ds = keys.map(key => m_data[key]["Ds Bytes"].filter(x => x > 0).reduce((x, y) => x + y, 0) );
+    let total_usage = keys.map((_, i) => (usage_ds[i] + usage_up[i]) * 1e-9 );
 
-    if (!globals.first) Plotly.update(div_id, {x: [x], y: [total_usage, y]});
+    // connection speed
+    let y_up = values.slice(1).map((_, i) => (usage_up[i+1] - usage_up[i]) / (keys[i+1] - keys[i]) / 125000);
+    let y_ds = values.slice(1).map((_, i) => (usage_ds[i+1] - usage_ds[i]) / (keys[i+1] - keys[i]) / 125000);
+
+    // add first known value to y
+    y_up = [y_up[0], ...y_up];
+    y_ds = [y_ds[0], ...y_ds];
+
+    let y = y_up.map((_, i) => (y_up[i] + y_ds[i]));
+
+    if (!globals.first) Plotly.update(div_id, {x: [x], y: [total_usage, y, y_up, y_ds]});
     else { 
         // graph layout
         let layout = {
@@ -71,13 +83,31 @@ function buildNetworkGraph(m_data, title, div_id) {
         let trace2 = {
             x: x,
             y: y,
-            line: {color: 'rgb(153, 255, 153)'},
+            line: {color: 'rgb(0, 153, 0)'},
             mode: 'lines+markers',
             yaxis: "y2",
             name: "Velocidade Total" 
         };
 
-        let data = [trace1, trace2];
+        let trace3 = {
+            x: x,
+            y: y_up,
+            line: {color: 'rgb(0, 255, 0)'},
+            mode: 'lines+markers',
+            yaxis: "y2",
+            name: "Velocidade Upload" 
+        };
+
+        let trace4 = {
+            x: x,
+            y: y_ds,
+            line: {color: 'rgb(204, 255, 153)'},
+            mode: 'lines+markers',
+            yaxis: "y2",
+            name: "Velocidade Download" 
+        };
+
+        let data = [trace1, trace2, trace3, trace4];
         
         let config = {responsive: true};
 
@@ -95,7 +125,10 @@ function buildPwrGraph(m_data, title, div_id, xaxis_title, yaxis_title, name1, n
     // the x values of the graph
     let rooms = Object.keys(m_data).map((room) => "Room " + String(room));
 
-    if (!globals.first) Plotly.update(div_id, {x: [rooms], y: [us_pwr, ds_pwr]});
+    if (!globals.first) {
+        Plotly.update(div_id, {x: [rooms], y: [us_pwr, ds_pwr]});
+        Plotly.restyle(div_id, {text: [us_pwr.map(String), ds_pwr.map(String)]});
+    }
     else {
         // graph layout
         let layout = {
@@ -154,12 +187,34 @@ function addInfo(data) {
     let cm_offline = lastData.MAC.filter(state => String(state).includes("offline")).length;
     let users_online = lastData.Number.filter(x => x > 0).reduce((x, y) => x + y, 0);
 
-    let text = `<p>Online CMs: ${cm_online}</p> 
-                <p>Offline CMs: ${cm_offline}</p>
-                <p>Usuarios ativos: ${users_online}</p>`;
+    // get list of macs of offline cable modems
+    let cm_offline_string = lastData.Room
+        .filter((_, i) => String(lastData.MAC[i]).includes("offline"))
+        .map(room_n => `Quarto ${room_n}`)
+        .slice(0, 10).join("\n");
+
+    let text = `<button type="submit" class="btn">Online CMs: ${cm_online}</button>
+                <button type="submit" class="btn ${cm_offline ? "cancel" : ""}" 
+                  title="${cm_offline_string}" onclick="showOfflineModal('${cm_offline_string.split("\n")}', ${cm_offline})">
+                    Offline CMs: ${cm_offline}
+                </button>
+                <button type="submit" class="btn">Usuarios ativos: ${users_online}</button>`;
     document.getElementById("info").innerHTML = text;
 }
 
+
+/**
+ * Shows a modal containing the offline cable modem's room number
+ * 
+ * @param {String} offlineCMString a string with comma separated values
+ * @param {Number} offlineNumber number of cable modems offline
+ */
+function showOfflineModal(offlineCMString, offlineNumber) {
+    CONSTANTS.OFFLINE_MODAL.style.display = "block";
+    
+    CONSTANTS.OFFLINE_MODAL_BODY.innerHTML = offlineCMString.replaceAll(",", "<br>");
+    CONSTANTS.OFFLINE_MODAL_HEADER.innerHTML = `Cable Modems Offline: ${offlineNumber}`;
+}
 
 
 /**
@@ -184,6 +239,11 @@ async function load_json() {
 function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
 
+/**
+ * Adds or removes the floor inside the value of the given HTML Element into
+ * the list of floors to show
+ * @param {*} element 
+ */
 function toggleFloor(element) {
     let floor = element.value;
     let i = globals.floors.indexOf(floor);
@@ -202,6 +262,11 @@ function getRoomFloor(room) {
 }
 
 
+/**
+ * Creates the floor selection div element with HTML labels to select which
+ * floors should be seen
+ * @param {JSON} lastData 
+ */
 function createFloors(lastData) {
     // save the floor information
     let floors = lastData.Room
@@ -217,9 +282,7 @@ function createFloors(lastData) {
             <input type="checkbox" checked="checked" value="${floor}" onclick="toggleFloor(this)">
             <span class="checkmark"></span>
         </label>`
-    }, "") + `<br>
-    <button type="submit" class="btn">Confirmar</button>
-    <button type="button" class="btn cancel" onclick="closeForm()">Cancelar</button>`;
+    }, "");
 }
 
 
@@ -233,12 +296,12 @@ async function loop() {
         if (!options.pause) {
             let data = await load_json();
 
-            let usage = {}
-            Object.keys(data).forEach(key => {
-                usage[key] = data[key]["Us Bytes"].filter(x => x > 0).reduce((x, y) => x + y, 0) 
-                    + data[key]["Ds Bytes"].filter(x => x > 0).reduce((x, y) => x + y, 0)
-            });
-            buildNetworkGraph(usage, "Usagem de dados", "net_usage");
+            // let usage = {}
+            // Object.keys(data).forEach(key => {
+            //     usage[key] = data[key]["Us Bytes"].filter(x => x > 0).reduce((x, y) => x + y, 0) 
+            //         + data[key]["Ds Bytes"].filter(x => x > 0).reduce((x, y) => x + y, 0)
+            // });
+            buildNetworkGraph(data, "Usagem de dados", "net_usage");
 
             // last info
             let mkeys = Object.keys(data);

@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
     <head>
         <title>Cable Modem Monitor</title>
@@ -10,10 +11,8 @@
     
         <div id="net_usage"></div>
 
-        <button class="open-button" onclick="openForm()">Selecionar andares</button>
+        <button class="open-button" onclick="toggleForm()">Selecionar andares</button>
         <div class="form-popup" id="myForm">
-              <button type="submit" class="btn">Confirmar</button>
-              <button type="button" class="btn cancel" onclick="closeForm()">Cancelar</button>
         </div>
           
         <div class='graph-container'>
@@ -21,20 +20,47 @@
             <div id="signal_snr"></div>
         </div>
         
+        <br>
         <div id="info">info</div>
     
+        <!--Modal which holds offline cm-->
+        <div id="myModal" class="modal">
+
+            <!-- Modal content -->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span class="close">&times;</span>
+                    <h2 id="modalHeaderTitle">Modal Header</h2>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <p>Some text in the Modal Body</p>
+                    <p>Some other text...</p>
+                </div>
+            </div>
+        
+        </div>
 
         <!-- Scripts -->
         <script src='scripts/plotly.js'></script>
         <script src="scripts/script.js"></script>
         <script>
-            function openForm() {
-                document.getElementById("myForm").style.display = "block";
+            function toggleForm() {
+                let myForm = document.getElementById("myForm");
+                myForm.style.display = myForm.style.display == "block" ? "none" : "block";
             }
-            
-            function closeForm() {
-                document.getElementById("myForm").style.display = "none";
+
+            // When the user clicks anywhere outside of the modal, close it
+            window.onclick = function(event) {
+                if (event.target == CONSTANTS.OFFLINE_MODAL) {
+                    CONSTANTS.OFFLINE_MODAL.style.display = "none";
+                }
             }
+
+            var span = document.getElementsByClassName("close")[0];
+            span.onclick = function() {
+                CONSTANTS.OFFLINE_MODAL.style.display = "none";
+            }
+
         </script>
             
 
