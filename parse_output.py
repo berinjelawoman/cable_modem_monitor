@@ -30,7 +30,7 @@ def get_output(command: str, text: List[str]) -> List[str]:
         if t=="\n")
     
     # split characters more than two whitespaces apart
-    return [re.split(r'\s{2,}', t) for t in text[start_index+1:end_index]]
+    return [re.split(r'\s{2,}', t) for t in text[start_index+1:end_index+1]]
 
 
 # A special function to the config output because it is structured a
