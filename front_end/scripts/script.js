@@ -8,6 +8,7 @@ const CONSTANTS = {
 
 let globals = {
     first: true,
+    data: null,
     floors: [] // list of strings containing the floor numbers
 };
 
@@ -50,6 +51,19 @@ function buildNetworkGraph(m_data, title, div_id) {
     // connection speed
     let y_up = values.slice(1).map((_, i) => (usage_up[i+1] - usage_up[i]) / (keys[i+1] - keys[i]) / 125000);
     let y_ds = values.slice(1).map((_, i) => (usage_ds[i+1] - usage_ds[i]) / (keys[i+1] - keys[i]) / 125000);
+
+    for (let i=0; i < y_up.length; i++) {
+        if (y_up[i] >= 0 || y_ds[i] >= 0) continue;
+
+        if (i > 0) {
+            y_up[i] = y_up[i - 1];
+            y_ds[i] = y_ds[i - 1];
+        } else {
+            y_up[i] = y_up[i + 1];
+            y_ds[i] = y_ds[i + 1];
+        }
+    }
+
 
     // add first known value to y
     y_up = [y_up[0], ...y_up];
@@ -116,7 +130,17 @@ function buildNetworkGraph(m_data, title, div_id) {
 };
 
 
-
+/**
+ * Builds two bar graphs with the given information. Used to create the power graphs in db
+ * 
+ * @param {JSON} m_data data to fill the graph
+ * @param {String} title graph title
+ * @param {String} div_id the id to draw the graph in
+ * @param {String} xaxis_title 
+ * @param {String} yaxis_title 
+ * @param {String} name1 legend name for first bar plot
+ * @param {String} name2 legend name for second bar plot
+ */
 function buildPwrGraph(m_data, title, div_id, xaxis_title, yaxis_title, name1, name2) {
     let [us_pwr, ds_pwr] = [[], []]; 
     
@@ -172,6 +196,33 @@ function buildPwrGraph(m_data, title, div_id, xaxis_title, yaxis_title, name1, n
         
         Plotly.newPlot(div_id, data, layout, config);
     }
+}
+
+
+function getPowerData() {
+    let mkeys = Object.keys(globals.data);
+    let lastData = globals.data[mkeys[mkeys.length - 1]];
+
+    // get us and ds pwr
+    let targetRooms = lastData.Room.filter(room => {
+        let floor = getRoomFloor(room);
+        return globals.floors.includes(floor);
+    });
+
+    let pwr = {}
+    targetRooms.forEach((room) => { 
+        let i = lastData.Room.indexOf(room);
+        pwr[room] = [lastData["US_Pwr"][i], lastData["DS_Pwr"][i]] 
+    });
+    
+    // get us and ds snr
+    let snr = {}
+    targetRooms.forEach((room) => { 
+        let i = lastData.Room.indexOf(room);
+        snr[room] = [lastData["US_SNR"][i], lastData["DS_SNR"][i]] 
+    });
+
+    return [pwr, snr]
 }
 
 
@@ -242,7 +293,7 @@ function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 /**
  * Adds or removes the floor inside the value of the given HTML Element into
  * the list of floors to show
- * @param {*} element 
+ * @param {HTMLElement} element 
  */
 function toggleFloor(element) {
     let floor = element.value;
@@ -253,6 +304,11 @@ function toggleFloor(element) {
         globals.floors.push(floor); 
         globals.floors.sort((a, b) => a - b); 
     }
+
+    // update graph
+    let [pwr, snr] = getPowerData();
+    buildPwrGraph(pwr, "Pot\u00EAncia", "signal_pwr", "Quarto", "dB", "Us Pot\u00EAncia", "Ds Pot\u00EAncia");
+    buildPwrGraph(snr, "Rela\u00E7\u00E3o Sinal Ru\u00EDdo", "signal_snr", "Quarto", "dB", "Us SNR", "Ds SNR");
 }
 
 
@@ -296,41 +352,24 @@ async function loop() {
         if (!options.pause) {
             let data = await load_json();
 
-            // let usage = {}
-            // Object.keys(data).forEach(key => {
-            //     usage[key] = data[key]["Us Bytes"].filter(x => x > 0).reduce((x, y) => x + y, 0) 
-            //         + data[key]["Ds Bytes"].filter(x => x > 0).reduce((x, y) => x + y, 0)
-            // });
-            buildNetworkGraph(data, "Usagem de dados", "net_usage");
+            if (data != null) globals.data = data;
+
+            
+            buildNetworkGraph(globals.data, "Usagem de dados", "net_usage");
 
             // last info
-            let mkeys = Object.keys(data);
-            let lastData = data[mkeys[mkeys.length - 1]];
+            let mkeys = Object.keys(globals.data);
+            let lastData = globals.data[mkeys[mkeys.length - 1]];
 
             // update the floors list
             if (globals.first) createFloors(lastData);
 
-            // get us and ds pwr
-            let targetRooms = lastData.Room.filter(room => {
-                let floor = getRoomFloor(room);
-                return globals.floors.includes(floor);
-            });
-            
-            let pwr = {}
-            targetRooms.forEach((room) => { 
-                let i = lastData.Room.indexOf(room);
-                pwr[room] = [lastData["US_Pwr"][i], lastData["DS_Pwr"][i]] 
-            });
+            // get us and ds power and snr
+            let [pwr, snr] = getPowerData();
             buildPwrGraph(pwr, "Pot\u00EAncia", "signal_pwr", "Quarto", "dB", "Us Pot\u00EAncia", "Ds Pot\u00EAncia");
-            // get us and ds snr
-            let snr = {}
-            targetRooms.forEach((room) => { 
-                let i = lastData.Room.indexOf(room);
-                snr[room] = [lastData["US_SNR"][i], lastData["DS_SNR"][i]] 
-            });
             buildPwrGraph(snr, "Rela\u00E7\u00E3o Sinal Ru\u00EDdo", "signal_snr", "Quarto", "dB", "Us SNR", "Ds SNR");
 
-            addInfo(data);
+            addInfo(globals.data);
 
             globals.first = false;
         }
