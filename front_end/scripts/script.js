@@ -272,10 +272,10 @@ function showOfflineModal(offlineCMString, offlineNumber) {
  * reads and loads the default data json and returns it
  * @returns {JSON} 
  */
-async function load_json() {
+async function load_json(name="files/df.json") {
     let data = null;    
 
-    response = await fetch("files/df.json");
+    response = await fetch(name);
     data = response.json();
 
     return data;
@@ -347,6 +347,20 @@ function createFloors(lastData) {
  * we do this because load_json is async
  */
 async function loop() {
+    //
+    try {
+        let url = new URL(window.location);
+        let c = url.searchParams.get("debug");
+        if (c !== null && c > 0) {
+            // in productioin change the load_json's param to be built using the 
+            // current window location root url
+            let _data = await load_json("http://127.0.0.1/cgi-bin/all_historical_data.py");
+            console.log( Object.values(_data).length);
+            buildNetworkGraph(_data, "Usagem total de dados", "net_usage_all");
+        }
+    } catch (e) { console.log(e); }
+    
+    //
     while (true) try {
 
         if (!options.pause) {
