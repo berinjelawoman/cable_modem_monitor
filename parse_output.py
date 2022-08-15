@@ -78,7 +78,7 @@ def save_df(df: pd.DataFrame) -> None:
     m_dict[now] = { column: df[column].tolist() for column in df.columns }
 
     try:
-        with open(filename) as f:
+        with open(filename_bk) as f:
             data = json.load(f)
 
         data.update(m_dict)
