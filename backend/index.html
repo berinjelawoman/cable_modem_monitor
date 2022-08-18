@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>WS Test</title>
+  </head>
+  <body>
+    <script>
+        function receive(websocket) {
+            websocket.addEventListener("message", ({ data }) => {
+                const event = JSON.parse(data);
+                console.log(data);
+            });
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            // Open the WebSocket connection and register event handlers.
+            const websocket = new WebSocket("ws://localhost:8001/");
+            receive(websocket);
+            
+            websocket.onopen = function (_) {
+                const event = {"days": 1}
+                websocket.send(JSON.stringify(event));
+            }
+            
+        });
+
+    </script>
+  </body>
+</html>
