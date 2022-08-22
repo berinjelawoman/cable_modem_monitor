@@ -7,6 +7,7 @@ const CONSTANTS = {
 
 
 let globals = {
+    websocket: null,
     first: true,
     data: null,
     floors: [] // list of strings containing the floor numbers
@@ -29,15 +30,7 @@ function unix_to_date(timestamp) {
 }
 
 
-/**
- * Builds a network usage graph with the given data
- * @param {JSON} m_data 
- * @param {string} title 
- * @param {string} div_id 
- * @param {string} xaxis_title 
- * @param {string} yaxis_title 
- */
-function buildNetworkGraph(m_data, title, div_id) {
+function getNetworkData(m_data) {
     let keys = Object.keys(m_data);
     let values = Object.values(m_data);
 
@@ -53,7 +46,7 @@ function buildNetworkGraph(m_data, title, div_id) {
     let y_ds = values.slice(1).map((_, i) => (usage_ds[i+1] - usage_ds[i]) / (keys[i+1] - keys[i]) / 125000);
 
     for (let i=0; i < y_up.length; i++) {
-        if (y_up[i] >= 0 || y_ds[i] >= 0) continue;
+        if (y_up[i] >= 0 && y_ds[i] >= 0) continue;
 
         if (i > 0) {
             y_up[i] = y_up[i - 1];
@@ -71,7 +64,22 @@ function buildNetworkGraph(m_data, title, div_id) {
 
     let y = y_up.map((_, i) => (y_up[i] + y_ds[i]));
 
-    if (!globals.first) Plotly.update(div_id, {x: [x], y: [total_usage, y, y_up, y_ds]});
+    return [x, y, y_up, y_ds, total_usage];
+}
+
+
+/**
+ * Builds a network usage graph with the given data
+ * @param {JSON} m_data 
+ * @param {string} title 
+ * @param {string} div_id 
+ * @param {string} xaxis_title 
+ * @param {string} yaxis_title 
+ */
+function buildNetworkGraph(m_data, title, div_id, newPlot=false) {
+    [x, y, y_up, y_ds, total_usage] = getNetworkData(m_data);
+    
+    if (!newPlot && !globals.first) Plotly.update(div_id, {x: [x], y: [total_usage, y, y_up, y_ds]});
     else { 
         // graph layout
         let layout = {
@@ -273,9 +281,9 @@ function showOfflineModal(offlineCMString, offlineNumber) {
  * @returns {JSON} 
  */
 async function load_json(name="files/df.json") {
-    let data = null;    
+    let data = null;
 
-    response = await fetch(name);
+    let response = await fetch(name);
     data = response.json();
 
     return data;
@@ -342,24 +350,36 @@ function createFloors(lastData) {
 }
 
 
+// async function load_all_data() {
+//     let url = new URL(window.location);
+//     let c = url.searchParams.get("debug");
+//     if (c !== null && c > 0) {
+//         // in productioin change the load_json's param to be built using the 
+//         // current window location root url
+//         let _data = await load_json("http://127.0.0.1/cgi-bin/files/untar_all.sh");
+//         console.log( Object.values(_data).length);
+//         buildNetworkGraph(_data, "Usagem total de dados", "net_usage_all", true);
+//     }
+// }
+
+
+async function load_all_data() {
+    let url = new URL(window.location);
+    let c = url.searchParams.get("debug");
+    if (c !== null && c > 0) {
+        // in productioin change the load_json's param to be built using the 
+        // current window location root url
+        globals.websocket = createWebsocket();
+    }
+}
+
+
 /**
  * run function every second
  * we do this because load_json is async
  */
 async function loop() {
     //
-    try {
-        let url = new URL(window.location);
-        let c = url.searchParams.get("debug");
-        if (c !== null && c > 0) {
-            // in productioin change the load_json's param to be built using the 
-            // current window location root url
-            let _data = await load_json("http://127.0.0.1/cgi-bin/all_historical_data.py");
-            console.log( Object.values(_data).length);
-            buildNetworkGraph(_data, "Usagem total de dados", "net_usage_all");
-        }
-    } catch (e) { console.log(e); }
-    
     //
     while (true) try {
 
@@ -396,3 +416,4 @@ async function loop() {
 
 
 loop();
+load_all_data();
