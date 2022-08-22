@@ -52,17 +52,21 @@ def get_usage_data() -> Iterator[Dict[str, Dict[str, List[int]]]]:
 
     # load files from newest to older
     for file in files:
-        with tarfile.open(file) as tar:
-            for m in tar.getmembers():
-                data = json.loads(tar.extractfile(m).read())
+        try:
+            with tarfile.open(file) as tar:
+                for m in tar.getmembers():
+                    data = json.loads(tar.extractfile(m).read())
 
-                # we only cara about the "Us Bytes" and "Ds Bytes" keys
-                targets = ["Us Bytes", "Ds Bytes"]
-                data = {date: {key: [int(i) for i in items] 
-                    for key, items in data[date].items() if key in targets}
-                        for date in data}
-                
-                yield data
+                    # we only cara about the "Us Bytes" and "Ds Bytes" keys
+                    targets = ["Us Bytes", "Ds Bytes"]
+                    data = {date: {key: [int(i) for i in items] 
+                        for key, items in data[date].items() if key in targets}
+                            for date in data}
+                    
+                    yield data
+        except Exception as e:
+            print(e)
+            continue
 
 
 
@@ -77,6 +81,7 @@ def get_upto_nth_usage_data(n: int) -> Iterator[Dict[str, Dict[str, List[int]]]]
         # if the difference is bigger than 7 days, stop iterating
         if (now - end_data).days >= n:
             break
+        print(end_data)
         yield data
 
 
@@ -97,7 +102,7 @@ def get_last_week_usage_data() -> Iterator[Dict[str, Dict[str, List[int]]]]:
 
 
 if __name__ == "__main__":
-    for i, data in enumerate(get_last_day_usage_data()):
+    for i, data in enumerate(get_last_week_usage_data()):
         print(i)
     
     data = get_usage_data()

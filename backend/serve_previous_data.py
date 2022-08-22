@@ -26,6 +26,7 @@ async def handler(websocket: websockets.server.WebSocketServerProtocol):
         await websocket.send(json.dumps(to_send, separators=(",", ":")))
         
 
+    print("All data has been sent")
     # send empty data with negative IP to mark message end
     to_send = {}
     to_send["id"] = -1
