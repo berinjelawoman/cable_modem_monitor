@@ -5,17 +5,27 @@
         <!-- CSS -->
         <link rel="stylesheet" href="css/w3.css">
         <link rel="stylesheet" href="css/style.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     </head>
     
     <body>
     
         <div id="net_usage"></div>
+
+        <div style="width:100%">
+            <button id="day" type="submit" class="btn" onclick="createWebsocket(1, 0)">Visualizar &Uacute;ltimo Dia</button>
+            <button id="week" type="submit" class="btn" onclick="createWebsocket(7, 1)">Visualizar &Uacute;ltima Semana</button>
+            <button id="month" type="submit" class="btn" onclick="createWebsocket(30, 2)">Visualizar &Uacute;ltimo M&ecirc;s</button>
+            <button id="year" type="submit" class="btn" onclick="createWebsocket(365, 3)">Visualizar &Uacute;ltimo Ano</button>
+        </div>
+
         <div id="net_usage_all"></div>
 
-        <div>
-            <button class="open-button btn" onclick="">Visualizar dados passados</button>
+        <!--<button class="open-button btn" onclick="createWebsocket()">Visualizar dados passados</button>-->
+        <div style="width:100%">
             <button class="open-button" onclick="toggleForm()">Selecionar andares</button>
         </div>
+
         <br>
         <div class="form-popup" id="myForm">
         </div>

@@ -2,8 +2,23 @@ let data_globals = {
     x: [],
     y_ups: [],
     y_dss: [],
-    y: []
+    y: [],
+    total_usage: [],
+    connectionOpen: false,
+    isSendingData: false,
+    dataButtons: [document.getElementById("day"), document.getElementById("week"), 
+        document.getElementById("month"),document.getElementById("year")]
 }
+
+
+function resetDataGlobals() {
+    data_globals.x = [];
+    data_globals.y_ups = [];
+    data_globals.y_dss = [];
+    data_globals.y = [];
+    data_globals.total_usage = [];
+}
+
 
 function getStandardDeviation (array) {
     const n = array.length
@@ -43,11 +58,12 @@ function filterOutliersIndexed(someArray) {
 
 /**
  * Transforms n data points into one by taking the mean of its neighbors
- * @param {*} data 
- * @param {*} n 
+ * @param {JSON} data 
+ * @param {int} n 
+ * @param {String} title
  * @returns 
  */
-function reduceDataSize(m_data, n) {
+function reduceDataSize(m_data, n, title) {
     let keys = Object.keys(m_data);
     [x, y, y_up, y_ds, total_usage] = getNetworkData(m_data);
 
@@ -79,10 +95,9 @@ function reduceDataSize(m_data, n) {
     data_globals.y_ups = [...n_y_ups, ...data_globals.y_ups];
     data_globals.y_dss = [...n_y_dss, ...data_globals.y_dss];
     data_globals.y = [...n_ys, ...data_globals.y];
+    data_globals.total_usage = [...total_usage, ...data_globals.total_usage]
 
-    let title = "Usagem total de dados";
     let div_id = "net_usage_all";
-
 
     // graph layout
     let layout = {
@@ -99,7 +114,7 @@ function reduceDataSize(m_data, n) {
 
     let trace1 = {
         x: data_globals.x,
-        y: total_usage,
+        y: data_globals.total_usage,
         mode: 'lines+markers',
         yaxis: "y1",
         name: "Uso" 
@@ -140,26 +155,52 @@ function reduceDataSize(m_data, n) {
 }
 
 
-function receiveData(websocket) {
+function receiveData(websocket, index) {
+    data_globals.dataButtons.forEach((b, i) => { if (i != index) b.disabled = true });
+
+    data_globals.isSendingData = true;
+    let mbtn = data_globals.dataButtons[index];
+    let text = mbtn.innerHTML;
+    let title = `Usagem de dados: ${text.split(" ").slice(1).join(" ")}`;
+    mbtn.innerHTML += ` <i class="fa fa-refresh fa-spin"></i>`;
     websocket.addEventListener("message", ({ data: _data }) => {
         try {
             let json = JSON.parse(_data);
             let data = json["data"];
 
             if (json["id"] != -1)
-                reduceDataSize(data, 100);
+                reduceDataSize(data, 100, title);
+            else {
+                data_globals.dataButtons.forEach(b => b.disabled = false);
+                data_globals.isSendingData = false; 
+                mbtn.innerHTML = text;
+            }
                 
         } catch (e) { console.log(e); }
     });
 }
 
 
-function createWebsocket() {
+/**
+ * Creates a new websocket and sends the request to get the data 
+ * for the amount of days specified in n_days
+ * @param {int} n_days 
+ * @param {int} index 
+ */
+function createWebsocket(n_days, index) {
+    if (data_globals.isSendingData) return;
+
+    if (data_globals.connectionOpen) resetDataGlobals();
+    else  data_globals.connectionOpen = true;
+
     const websocket = new WebSocket("ws://192.168.1.41:8001/");
-    
-    receiveData(websocket);
+
+    receiveData(websocket, index);
     websocket.addEventListener("open", () => {
-        websocket.send(JSON.stringify({"days": 7}));
+        websocket.send(JSON.stringify({"days": n_days}));
+    });
+    websocket.addEventListener('close', (event) => { 
+        data_globals.dataButtons.forEach(b => b.disabled = false);
+        data_globals.isSendingData = false; 
     })
-    return websocket;
 }
