@@ -30,7 +30,7 @@
 }
 
 
-/* Set a style for the submit/login button */
+/* Set a style for the default button */
 .btn {
     background-color: #04AA6D;
     color: white;
@@ -47,11 +47,15 @@
     background-color: red;
 }
 
-
-
 /* Add some hover effects to buttons */
 .btn:hover, .open-button:hover {
     opacity: 1;
+}
+
+.btn:disabled {
+    pointer-events:none;
+    background-color: #cccccc;
+    color: #666666;
 }
 
 
@@ -124,7 +128,35 @@
     transform: rotate(45deg);
 }
 
+/* Button group */
+.btn-group button {
+    background-color: #04AA6D; /* Green background */
+    border: 1px solid green; /* Green border */
+    color: white; /* White text */
+    padding: 10px 24px; /* Some padding */
+    cursor: pointer; /* Pointer/hand icon */
+    float: left; /* Float the buttons side by side */
+}
+  
+/* Clear floats (clearfix hack) */
+.btn-group:after {
+    content: "";
+    clear: both;
+    display: table;
+}
+  
+.btn-group button:not(:last-child) {
+    border-right: none; /* Prevent double borders */
+}
+  
+/* Add a background color on hover */
+.btn-group button:hover {
+    background-color: #3e8e41;
+}
+/* Button group end */
 
+
+/* Modal begin */
 /* The Modal (background) */
 .modal {
     display: none; /* Hidden by default */
@@ -199,3 +231,5 @@
     from {opacity: 0} 
     to {opacity: 1}
 }
+
+/* Modal end */
