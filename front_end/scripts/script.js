@@ -1,5 +1,6 @@
 const CONSTANTS = {
     FLOOR_SELECTOR_DIV: document.getElementById("myForm"),
+    USAGE_MODAL: document.getElementById("usage_by_floor_modal"),
     OFFLINE_MODAL: document.getElementById("myModal"),
     OFFLINE_MODAL_BODY: document.getElementById("modalBody"),
     OFFLINE_MODAL_HEADER: document.getElementById("modalHeaderTitle")
@@ -35,17 +36,16 @@ function getNetworkData(m_data) {
     let values = Object.values(m_data);
 
     let x = keys.map((key) => unix_to_date(key));
- 
+
     // connection total usage
-    let usage_up = keys.map(key => m_data[key]["Us Bytes"].filter(x => x > 0).reduce((x, y) => x + y, 0) );
-    let usage_ds = keys.map(key => m_data[key]["Ds Bytes"].filter(x => x > 0).reduce((x, y) => x + y, 0) );
-    let total_usage = keys.map((_, i) => (usage_ds[i] + usage_up[i]) * 1e-9 );
+    let usage_up = keys.map(key => m_data[key]["Us Bytes"].filter(x => x > 0).reduce((x, y) => x + y, 0));
+    let usage_ds = keys.map(key => m_data[key]["Ds Bytes"].filter(x => x > 0).reduce((x, y) => x + y, 0));
 
     // connection speed
-    let y_up = values.slice(1).map((_, i) => (usage_up[i+1] - usage_up[i]) / (keys[i+1] - keys[i]) / 125000);
-    let y_ds = values.slice(1).map((_, i) => (usage_ds[i+1] - usage_ds[i]) / (keys[i+1] - keys[i]) / 125000);
+    let y_up = values.slice(1).map((_, i) => (usage_up[i + 1] - usage_up[i]) / (keys[i + 1] - keys[i]) / 125000);
+    let y_ds = values.slice(1).map((_, i) => (usage_ds[i + 1] - usage_ds[i]) / (keys[i + 1] - keys[i]) / 125000);
 
-    for (let i=0; i < y_up.length; i++) {
+    for (let i = 0; i < y_up.length; i++) {
         if (y_up[i] >= 0 && y_ds[i] >= 0) continue;
 
         if (i > 0) {
@@ -64,7 +64,7 @@ function getNetworkData(m_data) {
 
     let y = y_up.map((_, i) => (y_up[i] + y_ds[i]));
 
-    return [x, y, y_up, y_ds, total_usage];
+    return [x, y, y_up, y_ds];
 }
 
 
@@ -76,62 +76,46 @@ function getNetworkData(m_data) {
  * @param {string} xaxis_title 
  * @param {string} yaxis_title 
  */
-function buildNetworkGraph(m_data, title, div_id, newPlot=false) {
-    [x, y, y_up, y_ds, total_usage] = getNetworkData(m_data);
-    
-    if (!newPlot && !globals.first) Plotly.update(div_id, {x: [x], y: [total_usage, y, y_up, y_ds]});
-    else { 
+function buildNetworkGraph(m_data, title, div_id, newPlot = false) {
+    [x, y, y_up, y_ds] = getNetworkData(m_data);
+
+    if (!newPlot && !globals.first) Plotly.update(div_id, { x: [x], y: [y, y_up, y_ds] });
+    else {
         // graph layout
         let layout = {
             title: title,
             autosize: true,
             xaxis: { title: "Tempo" },
-            yaxis: { title: "Uso (Giga bytes)" },
-            yaxis2: {
-                title: "Velocidade (Mb/s)",
-                overlaying: 'y',
-                side: 'right'
-            }
+            yaxis: { title: "Velocidade (Mb/s)" }
         };
 
         let trace1 = {
             x: x,
-            y: total_usage,
+            y: y,
+            line: { color: 'rgb(0, 153, 0)' },
             mode: 'lines+markers',
-            yaxis: "y1",
-            name: "Uso" 
+            name: "Velocidade Total"
         };
 
         let trace2 = {
             x: x,
-            y: y,
-            line: {color: 'rgb(0, 153, 0)'},
+            y: y_up,
+            line: { color: 'rgb(0, 255, 0)' },
             mode: 'lines+markers',
-            yaxis: "y2",
-            name: "Velocidade Total" 
+            name: "Velocidade Upload"
         };
 
         let trace3 = {
             x: x,
-            y: y_up,
-            line: {color: 'rgb(0, 255, 0)'},
-            mode: 'lines+markers',
-            yaxis: "y2",
-            name: "Velocidade Upload" 
-        };
-
-        let trace4 = {
-            x: x,
             y: y_ds,
-            line: {color: 'rgb(204, 255, 153)'},
+            line: { color: 'rgb(204, 255, 153)' },
             mode: 'lines+markers',
-            yaxis: "y2",
-            name: "Velocidade Download" 
+            name: "Velocidade Download"
         };
 
-        let data = [trace1, trace2, trace3, trace4];
-        
-        let config = {responsive: true};
+        let data = [trace1, trace2, trace3];
+
+        let config = { responsive: true };
 
         Plotly.newPlot(div_id, data, layout, config);
     }
@@ -150,16 +134,16 @@ function buildNetworkGraph(m_data, title, div_id, newPlot=false) {
  * @param {String} name2 legend name for second bar plot
  */
 function buildPwrGraph(m_data, title, div_id, xaxis_title, yaxis_title, name1, name2) {
-    let [us_pwr, ds_pwr] = [[], []]; 
-    
-    Object.values(m_data).forEach((el) => {us_pwr.push(el[0]), ds_pwr.push(el[1])});
+    let [us_pwr, ds_pwr] = [[], []];
+
+    Object.values(m_data).forEach((el) => { us_pwr.push(el[0]), ds_pwr.push(el[1]) });
 
     // the x values of the graph
     let rooms = Object.keys(m_data).map((room) => "Room " + String(room));
 
     if (!globals.first) {
-        Plotly.update(div_id, {x: [rooms], y: [us_pwr, ds_pwr]});
-        Plotly.restyle(div_id, {text: [us_pwr.map(String), ds_pwr.map(String)]});
+        Plotly.update(div_id, { x: [rooms], y: [us_pwr, ds_pwr] });
+        Plotly.restyle(div_id, { text: [us_pwr.map(String), ds_pwr.map(String)] });
     }
     else {
         // graph layout
@@ -183,7 +167,7 @@ function buildPwrGraph(m_data, title, div_id, xaxis_title, yaxis_title, name1, n
                 line: { width: 1.5 }
             }
         };
-    
+
         let trace2 = {
             x: rooms,
             y: ds_pwr,
@@ -197,11 +181,11 @@ function buildPwrGraph(m_data, title, div_id, xaxis_title, yaxis_title, name1, n
                 line: { width: 1.5 }
             }
         };
-    
-    
+
+
         let data = [trace1, trace2];
-        let config = {responsive: true};
-        
+        let config = { responsive: true };
+
         Plotly.newPlot(div_id, data, layout, config);
     }
 }
@@ -218,16 +202,16 @@ function getPowerData() {
     });
 
     let pwr = {}
-    targetRooms.forEach((room) => { 
+    targetRooms.forEach((room) => {
         let i = lastData.Room.indexOf(room);
-        pwr[room] = [lastData["US_Pwr"][i], lastData["DS_Pwr"][i]] 
+        pwr[room] = [lastData["US_Pwr"][i], lastData["DS_Pwr"][i]];
     });
-    
+
     // get us and ds snr
     let snr = {}
-    targetRooms.forEach((room) => { 
+    targetRooms.forEach((room) => {
         let i = lastData.Room.indexOf(room);
-        snr[room] = [lastData["US_SNR"][i], lastData["DS_SNR"][i]] 
+        snr[room] = [lastData["US_SNR"][i], lastData["DS_SNR"][i]];
     });
 
     return [pwr, snr]
@@ -270,7 +254,7 @@ function addInfo(data) {
  */
 function showOfflineModal(offlineCMString, offlineNumber) {
     CONSTANTS.OFFLINE_MODAL.style.display = "block";
-    
+
     CONSTANTS.OFFLINE_MODAL_BODY.innerHTML = offlineCMString.replaceAll(",", "<br>");
     CONSTANTS.OFFLINE_MODAL_HEADER.innerHTML = `Cable Modems Offline: ${offlineNumber}`;
 }
@@ -280,7 +264,7 @@ function showOfflineModal(offlineCMString, offlineNumber) {
  * reads and loads the default data json and returns it
  * @returns {JSON} 
  */
-async function load_json(name="files/df.json") {
+async function load_json(name = "files/df.json") {
     let data = null;
 
     let response = await fetch(name);
@@ -308,9 +292,9 @@ function toggleFloor(element) {
     let i = globals.floors.indexOf(floor);
 
     if (i >= 0) globals.floors.splice(i, 1);
-    else { 
-        globals.floors.push(floor); 
-        globals.floors.sort((a, b) => a - b); 
+    else {
+        globals.floors.push(floor);
+        globals.floors.sort((a, b) => a - b);
     }
 
     // update graph
@@ -336,7 +320,7 @@ function createFloors(lastData) {
     let floors = lastData.Room
         .map(getRoomFloor) // get floor number
         .filter((v, i, a) => a.indexOf(v) === i); // remove duplicates
-    
+
     floors.sort((a, b) => (a - b));
 
     globals.floors = floors;
@@ -350,27 +334,78 @@ function createFloors(lastData) {
 }
 
 
-// async function load_all_data() {
-//     let url = new URL(window.location);
-//     let c = url.searchParams.get("debug");
-//     if (c !== null && c > 0) {
-//         // in productioin change the load_json's param to be built using the 
-//         // current window location root url
-//         let _data = await load_json("http://127.0.0.1/cgi-bin/files/untar_all.sh");
-//         console.log( Object.values(_data).length);
-//         buildNetworkGraph(_data, "Usagem total de dados", "net_usage_all", true);
-//     }
-// }
 
 
-async function load_all_data() {
-    let url = new URL(window.location);
-    let c = url.searchParams.get("debug");
-    if (c !== null && c > 0) {
-        // in productioin change the load_json's param to be built using the 
-        // current window location root url
-        globals.websocket = createWebsocket();
-    }
+/**
+ * Plots the amount of usage (percentage) of each room by floor
+ */
+function getUsageByFloorData(lastData) {
+    let floors = lastData.Room
+        .map(getRoomFloor) // get floor number
+        .filter((v, i, a) => a.indexOf(v) === i); // remove duplicates
+
+    floors.sort((a, b) => (a - b));
+
+    const div = document.getElementById("usage_by_floor");
+
+    let leftPlot = true;
+    let floorLeft, traceLeft, layoutLeft, configLeft
+    floors.forEach(floor => {
+        // get rooms which are in the current floor
+        let targetRooms = lastData.Room.filter(room => {
+            let room_floor = getRoomFloor(room);
+            return floor == room_floor;
+        });
+
+        // get rooms usage data
+        usage =  targetRooms.map((room) => {
+            let i = lastData.Room.indexOf(room);
+            return {
+                room: room,
+                usage: lastData["Us Bytes"][i] + lastData["Us Bytes"][i]
+            }
+        });
+        usage.sort((a, b) => a.room - b.room);
+
+        // transform data into percentage
+        let sum = usage.reduce((acc, x) => acc + x.usage, 0);
+        usage = usage.map(u => {return {room: u.room, usage: u.usage / sum * 100}});
+
+        // console.log(usage, sum);
+
+        // create the div to do the plotting
+        if (leftPlot) {
+            div.innerHTML +=  `<div class='graph-container'>
+                    <div id="${floor}"></div>
+                    <div id="${(+floor)+1}"></div>
+                </div>`;
+        }
+        
+        leftPlot = !leftPlot;
+
+        // graph layout
+        let layout = {
+            title: `Consumo total andar ${floor} (porcentagem)`,
+            autosize: true,
+            xaxis: { title: "Quarto" },
+            yaxis: { title: "Porcentagem" }
+        };
+
+        let trace = {
+            x: usage.map(u => `Quarto ${u.room}`),
+            y: usage.map(u => u.usage),
+            type: 'bar',
+            text: usage.map(u => `${u.usage.toFixed(2)}%`),
+            textposition: 'auto',
+            hoverinfo: 'none'
+        };
+
+        let config = { responsive: true };
+        floorLeft, traceLeft, layoutLeft, configLeft = floor, [trace], layout, config;
+        
+        Plotly.newPlot(floor, [trace], layout, config);
+    })
+    
 }
 
 
@@ -388,7 +423,7 @@ async function loop() {
 
             if (data != null) globals.data = data;
 
-            
+
             buildNetworkGraph(globals.data, "Usagem de dados", "net_usage");
 
             // last info
@@ -396,7 +431,10 @@ async function loop() {
             let lastData = globals.data[mkeys[mkeys.length - 1]];
 
             // update the floors list
-            if (globals.first) createFloors(lastData);
+            if (globals.first) {
+                createFloors(lastData);
+                try { getUsageByFloorData(lastData); } catch (e) { console.log(e); }
+            }
 
             // get us and ds power and snr
             let [pwr, snr] = getPowerData();
@@ -416,4 +454,3 @@ async function loop() {
 
 
 loop();
-load_all_data();

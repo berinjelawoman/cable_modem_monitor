@@ -5,6 +5,7 @@
         <!-- CSS -->
         <link rel="stylesheet" href="css/w3.css">
         <link rel="stylesheet" href="css/style.css">
+        <link rel="stylesheet" href="css/w3css.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     </head>
     
@@ -23,7 +24,7 @@
 
         <!--<button class="open-button btn" onclick="createWebsocket()">Visualizar dados passados</button>-->
         <div style="width:100%">
-            <button class="open-button" onclick="toggleForm()">Selecionar andares</button>
+            <button class="open-button" onclick="toggleForm('myForm')">Selecionar andares</button>
         </div>
 
         <br>
@@ -57,19 +58,40 @@
         
         </div>
 
+        <!-- div to hold usage by floor graphs -->
+        <div id="usage_by_floor_modal" class="mmodal">
+            <div class="mmodal-content">
+                <header class="w3-container w3-green"> 
+                    <span onclick="toggleForm('usage_by_floor_modal')" 
+                        class="w3-button w3-display-topright">&times;</span>
+                    <h2>Usagem por Andar</h2>
+                </header>
+                <div id="usage_by_floor" class="mmodal-body">
+                    
+                </div>
+            </div>
+        </div>
+
+
+        <button type="submit" class="btn" onclick="toggleForm('usage_by_floor_modal')">
+            Visualizar Porcentagem de Dados por Andar
+        </button>
+
+
         <!-- Scripts -->
         <script src='scripts/plotly.js'></script>
         <script src='scripts/websocket.js'></script>
         <script src="scripts/script.js"></script>
         <script>
-            function toggleForm() {
-                let myForm = document.getElementById("myForm");
+            function toggleForm(formName) {
+                let myForm = document.getElementById(formName);
                 myForm.style.display = myForm.style.display == "block" ? "none" : "block";
             }
 
             // When the user clicks anywhere outside of the modal, close it
             window.onclick = function(event) {
-                if (event.target == CONSTANTS.OFFLINE_MODAL) {
+                if (event.target == CONSTANTS.OFFLINE_MODAL || event.target == CONSTANTS.USAGE_MODAL) {
+                    CONSTANTS.USAGE_MODAL.style.display = "none";
                     CONSTANTS.OFFLINE_MODAL.style.display = "none";
                 }
             }

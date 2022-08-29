@@ -3,7 +3,6 @@ let data_globals = {
     y_ups: [],
     y_dss: [],
     y: [],
-    total_usage: [],
     connectionOpen: false,
     isSendingData: false,
     dataButtons: [document.getElementById("day"), document.getElementById("week"), 
@@ -16,7 +15,6 @@ function resetDataGlobals() {
     data_globals.y_ups = [];
     data_globals.y_dss = [];
     data_globals.y = [];
-    data_globals.total_usage = [];
 }
 
 
@@ -65,7 +63,7 @@ function filterOutliersIndexed(someArray) {
  */
 function reduceDataSize(m_data, n, title) {
     let keys = Object.keys(m_data);
-    [x, y, y_up, y_ds, total_usage] = getNetworkData(m_data);
+    [x, y, y_up, y_ds] = getNetworkData(m_data);
 
     let n_x = [];
     let n_y_ups = [];
@@ -95,7 +93,6 @@ function reduceDataSize(m_data, n, title) {
     data_globals.y_ups = [...n_y_ups, ...data_globals.y_ups];
     data_globals.y_dss = [...n_y_dss, ...data_globals.y_dss];
     data_globals.y = [...n_ys, ...data_globals.y];
-    data_globals.total_usage = [...total_usage, ...data_globals.total_usage]
 
     let div_id = "net_usage_all";
 
@@ -104,50 +101,35 @@ function reduceDataSize(m_data, n, title) {
         title: title,
         autosize: true,
         xaxis: { title: "Tempo" },
-        yaxis: { title: "Uso (Giga bytes)" },
-        yaxis2: {
-            title: "Velocidade (Mb/s)",
-            overlaying: 'y',
-            side: 'right'
-        }
+        yaxis: { title: "Velocidade (Mb/s)" },
     };
+
 
     let trace1 = {
-        x: data_globals.x,
-        y: data_globals.total_usage,
-        mode: 'lines+markers',
-        yaxis: "y1",
-        name: "Uso" 
-    };
-
-    let trace2 = {
         x: data_globals.x,
         y: data_globals.y,
         line: {color: 'rgb(0, 153, 0)'},
         mode: 'lines+markers',
-        yaxis: "y2",
         name: "Velocidade Total" 
     };
 
-    let trace3 = {
+    let trace2 = {
         x: data_globals.x,
         y: data_globals.y_ups,
         line: {color: 'rgb(0, 255, 0)'},
         mode: 'lines+markers',
-        yaxis: "y2",
         name: "Velocidade Upload" 
     };
 
-    let trace4 = {
+    let trace3 = {
         x: data_globals.x,
         y: data_globals.y_dss,
         line: {color: 'rgb(204, 255, 153)'},
         mode: 'lines+markers',
-        yaxis: "y2",
         name: "Velocidade Download" 
     };
 
-    let data = [trace1, trace2, trace3, trace4];
+    let data = [trace1, trace2, trace3];
     
     let config = {responsive: true};
 
