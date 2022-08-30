@@ -37,30 +37,9 @@ function getNetworkData(m_data) {
 
     let x = keys.map((key) => unix_to_date(key));
 
-    // connection total usage
-    let usage_up = keys.map(key => m_data[key]["Us Bytes"].filter(x => x > 0).reduce((x, y) => x + y, 0));
-    let usage_ds = keys.map(key => m_data[key]["Ds Bytes"].filter(x => x > 0).reduce((x, y) => x + y, 0));
-
-    // connection speed
-    let y_up = values.slice(1).map((_, i) => (usage_up[i + 1] - usage_up[i]) / (keys[i + 1] - keys[i]) / 125000);
-    let y_ds = values.slice(1).map((_, i) => (usage_ds[i + 1] - usage_ds[i]) / (keys[i + 1] - keys[i]) / 125000);
-
-    for (let i = 0; i < y_up.length; i++) {
-        if (y_up[i] >= 0 && y_ds[i] >= 0) continue;
-
-        if (i > 0) {
-            y_up[i] = y_up[i - 1];
-            y_ds[i] = y_ds[i - 1];
-        } else {
-            y_up[i] = y_up[i + 1];
-            y_ds[i] = y_ds[i + 1];
-        }
-    }
-
-
-    // add first known value to y
-    y_up = [y_up[0], ...y_up];
-    y_ds = [y_ds[0], ...y_ds];
+    // convert to Mb
+    let y_up = values.map(v => v["Usage"]["CurrentTx(kbps)"].reduce((x, y) => x + y, 0) / 1000);
+    let y_ds = values.map(v => v["Usage"]["CurrentRx(kbps)"].reduce((x, y) => x + y, 0) / 1000);
 
     let y = y_up.map((_, i) => (y_up[i] + y_ds[i]));
 
