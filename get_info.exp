@@ -31,3 +31,7 @@ expect "\#"
 # cable modem packages get DS bytes and US bytes
 send "show cable modem counters\r"
 expect "\#"
+
+# cable modem precalculated usage stats
+send "show interface uplink statistics summary\r"
+expect "\#"

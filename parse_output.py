@@ -48,7 +48,23 @@ def get_config_output(text: List[str]) -> List[str]:
     return [["MAC Address", "Room"]] + \
            [ [txt.split(" ")[2], txt.split(" ")[-2].replace('"', "")]
              for txt in text[start_index+1:end_index+1]]
+
+
+
+def get_stats(text: List[str]) -> List[str]:
+    """
+    Returns a list containing the network usage statistics of each port
+    """
+    command = "show interface uplink statistics summary"
+
+    start_index = next(i for i, t in enumerate(text) 
+        if command in t)
+    end_index = next(i + start_index for i, t in enumerate(text[start_index+1:]) 
+        if "#" in t)
     
+    # split characters more than two whitespaces apart
+    return [re.split(r'\s{2,}', t) for t in text[start_index+1:end_index+1]]
+
 
 def convert_values(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -66,7 +82,7 @@ def convert_values(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def save_df(df: pd.DataFrame) -> None:
+def save_dfs(df: pd.DataFrame, stats_df: pd.DataFrame) -> None:
     """
     Merges the dataframe into a timestamped json of the usage history.
     """
@@ -76,6 +92,7 @@ def save_df(df: pd.DataFrame) -> None:
     m_dict = {}
     now = int(time.time())
     m_dict[now] = { column: df[column].tolist() for column in df.columns }
+    m_dict[now]["Usage"] = { column: stats_df[column].tolist() for column in stats_df.columns }
 
     try:
         with open(filename_bk) as f:
@@ -102,6 +119,7 @@ def main():
     """
     text = read_output()
     config_out = get_config_output(text)
+    stats_out = get_stats(text)
 
     cm_out = get_output("show cable modem", text)
     cpe_out = get_output("show cpe all", text)
@@ -117,6 +135,7 @@ def main():
     cpe_targets = ["CM MAC", "CPE IP Address"]
     phy_targets = ["MAC Address", "US_Pwr", "US_SNR", "DS_Pwr", "DS_SNR"]
     counters_targets = ["MAC Address", "Ds Bytes", "Us Bytes"]
+    stats_targets = [" Port", "CurrentTx(kbps)", "CurrentRx(kbps)", "MaxTx(kbps)", "MaxRx(kbps)"]
 
     config_df = pd.DataFrame(config_out[1:], columns=config_out[0])
 
@@ -126,6 +145,9 @@ def main():
     phy_df = pd.DataFrame(phy_out[1:], columns=phy_out[0])[phy_targets]
     counters_df = pd.DataFrame(counters_out[1:], 
         columns=counters_out[0])[counters_targets]
+
+    stats_df = pd.DataFrame(stats_out[1:], columns=stats_out[0])[stats_targets]
+    stats_df = stats_df.rename(columns={" Port" : "Port"})
 
     # we need to change the CM Mac column to MAC Address
     cpe_df = pd.DataFrame(cpe_out[1:], columns=cpe_out[0])[cpe_targets]
@@ -138,7 +160,7 @@ def main():
     df = convert_values(df)
     df = df.fillna(-1)
 
-    save_df(df)
+    save_dfs(df, stats_df)
 
 
 #%%
