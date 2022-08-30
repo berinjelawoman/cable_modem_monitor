@@ -41,9 +41,7 @@ function getNetworkData(m_data) {
     let y_up = values.map(v => v["Usage"]["CurrentTx(kbps)"].reduce((x, y) => x + y, 0) / 1000);
     let y_ds = values.map(v => v["Usage"]["CurrentRx(kbps)"].reduce((x, y) => x + y, 0) / 1000);
 
-    let y = y_up.map((_, i) => (y_up[i] + y_ds[i]));
-
-    return [x, y, y_up, y_ds];
+    return [x, y_up, y_ds];
 }
 
 
@@ -56,10 +54,16 @@ function getNetworkData(m_data) {
  * @param {string} yaxis_title 
  */
 function buildNetworkGraph(m_data, title, div_id, newPlot = false) {
-    [x, y, y_up, y_ds] = getNetworkData(m_data);
+    [x, y_up, y_ds] = getNetworkData(m_data);
 
-    if (!newPlot && !globals.first) Plotly.update(div_id, { x: [x], y: [y, y_up, y_ds] });
-    else {
+    let v = Object.values(m_data);
+    let max_ds = v[v.length-1]["Usage"]["MaxRx(kbps)"].reduce((x, y) => x + y, 0) / 1000;
+    let max_us = v[v.length-1]["Usage"]["MaxTx(kbps)"].reduce((x, y) => x + y, 0) / 1000;
+    title += `<br> Max Ds ${max_ds.toFixed(2)} (Mbps) Max Us ${max_us.toFixed(2)} (Mbps)`; 
+
+    if (!newPlot && !globals.first) {
+        Plotly.update(div_id, { x: [x], y: [y_up, y_ds] }, { title: title });
+    } else {
         // graph layout
         let layout = {
             title: title,
@@ -70,21 +74,13 @@ function buildNetworkGraph(m_data, title, div_id, newPlot = false) {
 
         let trace1 = {
             x: x,
-            y: y,
-            line: { color: 'rgb(0, 153, 0)' },
-            mode: 'lines+markers',
-            name: "Velocidade Total"
-        };
-
-        let trace2 = {
-            x: x,
             y: y_up,
             line: { color: 'rgb(0, 255, 0)' },
             mode: 'lines+markers',
             name: "Velocidade Upload"
         };
 
-        let trace3 = {
+        let trace2 = {
             x: x,
             y: y_ds,
             line: { color: 'rgb(204, 255, 153)' },
@@ -92,7 +88,7 @@ function buildNetworkGraph(m_data, title, div_id, newPlot = false) {
             name: "Velocidade Download"
         };
 
-        let data = [trace1, trace2, trace3];
+        let data = [trace1, trace2];
 
         let config = { responsive: true };
 
