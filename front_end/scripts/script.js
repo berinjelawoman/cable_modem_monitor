@@ -337,7 +337,7 @@ function getUsageByFloorData(lastData) {
             let i = lastData.Room.indexOf(room);
             return {
                 room: room,
-                usage: lastData["Us Bytes"][i] + lastData["Us Bytes"][i]
+                usage: lastData["Ds Bytes"][i] + lastData["Us Bytes"][i]
             }
         });
         usage.sort((a, b) => a.room - b.room);
