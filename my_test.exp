@@ -1,0 +1,17 @@
+#!/usr/bin/env expect
+
+# login
+spawn sshpass -p1234 ssh suporte@189.42.248.178 -p 5066
+expect "\$ "
+
+send "sshpass -plab ssh lab@10.10.0.2\r"
+
+# setup
+expect "\> "
+send "en\r"
+expect "\# "
+send "terminal length 512\r"
+expect "\#"
+
+send "show cable downstream total\r"
+expect "\#"

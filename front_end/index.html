@@ -1,108 +1,114 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Cable Modem Monitor</title>
-        <!-- CSS -->
-        <link rel="stylesheet" href="css/w3.css">
-        <link rel="stylesheet" href="css/style.css">
-        <link rel="stylesheet" href="css/w3css.css">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    </head>
-    
-    <body>
-    
-        <div id="net_usage"></div>
 
-        <div style="width:100%">
+<head>
+    <title>Cable Modem Monitor</title>
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/w3.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/w3css.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+<body>
+
+    <div style="width:100%">
+        <img style="float:left;" width="10%" src="imgs/logo_blincast.jpeg">
+        <img style="display: block;margin-left: auto;" width="10%" src="imgs/logo_ibis.png">
+    </div>
+
+    <div id="net_usage"></div>
+
+    <!--<div style="width:100%">
             <button id="day" type="submit" class="btn" onclick="createWebsocket(1, 0)">Visualizar &Uacute;ltimo Dia</button>
             <button id="week" type="submit" class="btn" onclick="createWebsocket(7, 1)">Visualizar &Uacute;ltima Semana</button>
             <button id="month" type="submit" class="btn" onclick="createWebsocket(30, 2)">Visualizar &Uacute;ltimo M&ecirc;s</button>
             <button id="year" type="submit" class="btn" onclick="createWebsocket(365, 3)">Visualizar &Uacute;ltimo Ano</button>
-        </div>
+        </div>-->
 
-        <div id="net_usage_all"></div>
+    <div id="net_usage_all"></div>
 
-        <!--<button class="open-button btn" onclick="createWebsocket()">Visualizar dados passados</button>-->
-        <div style="width:100%">
-            <button class="open-button" onclick="toggleForm('myForm')">Selecionar andares</button>
-        </div>
+    <!--<button class="open-button btn" onclick="createWebsocket()">Visualizar dados passados</button>-->
+    <div style="width:100%">
+        <button class="open-button" onclick="toggleForm('myForm')">Selecionar andares</button>
+    </div>
 
-        <br>
-        <div class="form-popup" id="myForm">
-        </div>
-        
-        <div></div>
+    <br>
+    <div class="form-popup" id="myForm">
+    </div>
 
-        <div class='graph-container'>
-            <div id="signal_pwr"></div>
-            <div id="signal_snr"></div>
-        </div>
-        
-        
-        <div id="info">info</div>
-    
-        <!--Modal which holds offline cm-->
-        <div id="myModal" class="modal">
+    <div></div>
 
-            <!-- Modal content -->
-            <div class="modal-content">
-                <div class="modal-header">
-                    <span class="close">&times;</span>
-                    <h2 id="modalHeaderTitle">Modal Header</h2>
-                </div>
-                <div class="modal-body" id="modalBody">
-                    <p>Some text in the Modal Body</p>
-                    <p>Some other text...</p>
-                </div>
+    <div class='graph-container'>
+        <div id="signal_pwr"></div>
+        <div id="signal_snr"></div>
+    </div>
+
+
+    <div id="info"></div>
+
+    <!--Modal which holds offline cm-->
+    <div id="myModal" class="modal">
+
+        <!-- Modal content -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close">&times;</span>
+                <h2 id="modalHeaderTitle">Modal Header</h2>
             </div>
-        
-        </div>
-
-        <!-- div to hold usage by floor graphs -->
-        <div id="usage_by_floor_modal" class="mmodal">
-            <div class="mmodal-content">
-                <header class="w3-container w3-green"> 
-                    <span onclick="toggleForm('usage_by_floor_modal')" 
-                        class="w3-button w3-display-topright">&times;</span>
-                    <h2>Usagem por Andar</h2>
-                </header>
-                <div id="usage_by_floor" class="mmodal-body">
-                    
-                </div>
+            <div class="modal-body" id="modalBody">
+                <p>Some text in the Modal Body</p>
+                <p>Some other text...</p>
             </div>
         </div>
 
+    </div>
 
-        <button type="submit" class="btn" onclick="toggleForm('usage_by_floor_modal')">
-            Visualizar Porcentagem de Dados por Andar
-        </button>
+    <!-- div to hold usage by floor graphs -->
+    <div id="usage_by_floor_modal" class="mmodal">
+        <div class="mmodal-content">
+            <header class="w3-container w3-green">
+                <span onclick="toggleForm('usage_by_floor_modal')" class="w3-button w3-display-topright">&times;</span>
+                <h2>Usagem por Andar</h2>
+            </header>
+            <div id="usage_by_floor" class="mmodal-body">
+
+            </div>
+        </div>
+    </div>
 
 
-        <!-- Scripts -->
-        <script src='scripts/plotly.js'></script>
-        <script src='scripts/websocket.js'></script>
-        <script src="scripts/script.js"></script>
-        <script>
-            function toggleForm(formName) {
-                let myForm = document.getElementById(formName);
-                myForm.style.display = myForm.style.display == "block" ? "none" : "block";
-            }
+    <button type="submit" class="btn" onclick="toggleForm('usage_by_floor_modal')">
+        Visualizar Porcentagem de Dados por Andar
+    </button>
 
-            // When the user clicks anywhere outside of the modal, close it
-            window.onclick = function(event) {
-                if (event.target == CONSTANTS.OFFLINE_MODAL || event.target == CONSTANTS.USAGE_MODAL) {
-                    CONSTANTS.USAGE_MODAL.style.display = "none";
-                    CONSTANTS.OFFLINE_MODAL.style.display = "none";
-                }
-            }
 
-            var span = document.getElementsByClassName("close")[0];
-            span.onclick = function() {
+    <!-- Scripts -->
+    <script src='scripts/plotly.js'></script>
+    <script src='scripts/websocket.js'></script>
+    <script src="scripts/script.js"></script>
+    <script>
+        function toggleForm(formName) {
+            let myForm = document.getElementById(formName);
+            myForm.style.display = myForm.style.display == "block" ? "none" : "block";
+        }
+
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function (event) {
+            if (event.target == CONSTANTS.OFFLINE_MODAL || event.target == CONSTANTS.USAGE_MODAL) {
+                CONSTANTS.USAGE_MODAL.style.display = "none";
                 CONSTANTS.OFFLINE_MODAL.style.display = "none";
             }
+        }
 
-        </script>
-            
+        var span = document.getElementsByClassName("close")[0];
+        span.onclick = function () {
+            CONSTANTS.OFFLINE_MODAL.style.display = "none";
+        }
 
-    </body>
+    </script>
+
+
+</body>
+
 </html>

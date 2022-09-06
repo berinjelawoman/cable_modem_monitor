@@ -1,6 +1,6 @@
 #!/bin/bash
 counter=0
-version=0
+version=15
 
 
 while : 
@@ -9,9 +9,9 @@ do
     sudo python3 parse_output.py
     # remember to add code to zip jsons after a while
     counter=$((counter+1))
-    if [ $counter -gt 500 ]; then
+    if [ $counter -gt 5000 ]; then
         # zip file
-        sudo tar -zcvf "~/.bk/df${version}.tar.gz" /var/www/monitor/test/files/df_bk.json
+        sudo tar -zcvf "/home/servidor/.bk/df${version}.tar.gz" /var/www/monitor/test/files/df_bk.json
         sudo rm /var/www/monitor/test/files/df_bk.json
 
         counter=0
