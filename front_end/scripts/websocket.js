@@ -136,21 +136,24 @@ function reduceDataSize(m_data, n, title) {
         yaxis: { title: "Velocidade (Mb/s)" },
     };
 
+    
     let trace1 = {
         x: data_globals.x,
-        y: data_globals.y_ups,
+        y: data_globals.y_dss,
         line: {color: 'rgb(0, 255, 0)'},
+        mode: 'lines+markers',
+        name: "Velocidade Download" 
+    };
+
+
+    let trace2 = {
+        x: data_globals.x,
+        y: data_globals.y_ups,
+        line: {color: 'rgb(204, 255, 153)'},
         mode: 'lines+markers',
         name: "Velocidade Upload" 
     };
 
-    let trace2 = {
-        x: data_globals.x,
-        y: data_globals.y_dss,
-        line: {color: 'rgb(204, 255, 153)'},
-        mode: 'lines+markers',
-        name: "Velocidade Download" 
-    };
 
     let data = [trace1, trace2];
     

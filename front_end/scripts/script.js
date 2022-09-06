@@ -62,7 +62,7 @@ function buildNetworkGraph(m_data, title, div_id, newPlot = false) {
     title += `<br> Max Ds ${max_ds.toFixed(2)} (Mbps) Max Us ${max_us.toFixed(2)} (Mbps)`; 
 
     if (!newPlot && !globals.first) {
-        Plotly.update(div_id, { x: [x], y: [y_up, y_ds] }, { title: title });
+        Plotly.update(div_id, { x: [x], y: [y_ds, y_up] }, { title: title });
     } else {
         // graph layout
         let layout = {
@@ -74,18 +74,19 @@ function buildNetworkGraph(m_data, title, div_id, newPlot = false) {
 
         let trace1 = {
             x: x,
-            y: y_up,
+            y: y_ds,
             line: { color: 'rgb(0, 255, 0)' },
             mode: 'lines+markers',
-            name: "Velocidade Upload"
+            name: "Velocidade Download"
         };
+
 
         let trace2 = {
             x: x,
-            y: y_ds,
+            y: y_up,
             line: { color: 'rgb(204, 255, 153)' },
             mode: 'lines+markers',
-            name: "Velocidade Download"
+            name: "Velocidade Upload"
         };
 
         let data = [trace1, trace2];
@@ -412,9 +413,9 @@ async function loop() {
             }
 
             // get us and ds power and snr
-            let [pwr, snr] = getPowerData();
-            buildPwrGraph(pwr, "Pot\u00EAncia", "signal_pwr", "Quarto", "dB", "Us Pot\u00EAncia", "Ds Pot\u00EAncia");
-            buildPwrGraph(snr, "Rela\u00E7\u00E3o Sinal Ru\u00EDdo", "signal_snr", "Quarto", "dB", "Us SNR", "Ds SNR");
+            // let [pwr, snr] = getPowerData();
+            // buildPwrGraph(pwr, "Pot\u00EAncia", "signal_pwr", "Quarto", "dB", "Us Pot\u00EAncia", "Ds Pot\u00EAncia");
+            // buildPwrGraph(snr, "Rela\u00E7\u00E3o Sinal Ru\u00EDdo", "signal_snr", "Quarto", "dB", "Us SNR", "Ds SNR");
 
             addInfo(globals.data);
 
