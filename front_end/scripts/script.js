@@ -62,7 +62,7 @@ function buildNetworkGraph(m_data, title, div_id, newPlot = false) {
     title += `<br> Max Ds ${max_ds.toFixed(2)} (Mbps) Max Us ${max_us.toFixed(2)} (Mbps)`; 
 
     if (!newPlot && !globals.first) {
-        Plotly.update(div_id, { x: [x], y: [y_up, y_ds] }, { title: title });
+        Plotly.update(div_id, { x: [x], y: [y_ds, y_up] }, { title: title });
     } else {
         // graph layout
         let layout = {
@@ -74,18 +74,19 @@ function buildNetworkGraph(m_data, title, div_id, newPlot = false) {
 
         let trace1 = {
             x: x,
-            y: y_up,
+            y: y_ds,
             line: { color: 'rgb(0, 255, 0)' },
             mode: 'lines+markers',
-            name: "Velocidade Upload"
+            name: "Velocidade Download"
         };
+
 
         let trace2 = {
             x: x,
-            y: y_ds,
+            y: y_up,
             line: { color: 'rgb(204, 255, 153)' },
             mode: 'lines+markers',
-            name: "Velocidade Download"
+            name: "Velocidade Upload"
         };
 
         let data = [trace1, trace2];
@@ -346,10 +347,8 @@ function getUsageByFloorData(lastData) {
         let sum = usage.reduce((acc, x) => acc + x.usage, 0);
         usage = usage.map(u => {return {room: u.room, usage: u.usage / sum * 100}});
 
-        // console.log(usage, sum);
-
         // create the div to do the plotting
-        if (leftPlot) {
+        if (leftPlot && globals.first) {
             div.innerHTML +=  `<div class='graph-container'>
                     <div id="${floor}"></div>
                     <div id="${(+floor)+1}"></div>
@@ -389,8 +388,7 @@ function getUsageByFloorData(lastData) {
  * we do this because load_json is async
  */
 async function loop() {
-    //
-    //
+
     while (true) try {
 
         if (!options.pause) {
@@ -408,8 +406,9 @@ async function loop() {
             // update the floors list
             if (globals.first) {
                 createFloors(lastData);
-                try { getUsageByFloorData(lastData); } catch (e) { console.log(e); }
             }
+
+            try { getUsageByFloorData(lastData); } catch (e) { console.log(e); }
 
             // get us and ds power and snr
             let [pwr, snr] = getPowerData();

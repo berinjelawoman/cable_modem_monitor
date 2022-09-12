@@ -81,8 +81,6 @@ function filterOutliersIndexed(someArray) {
     maxValue = q3 + iqr * 1.5;
     minValue = q1 - iqr * 1.5;
 
-    if (maxValue > 500) maxValue = 500;
-
     return someArray.reduce((acc, x, i) => {
         if ((x >= minValue) && (x <= maxValue)) acc.push(i);
         return acc;
@@ -107,8 +105,8 @@ function reduceDataSize(m_data, n, title) {
 
     for (let i=0; i < keys.length - n; i+=n) {
         n_x.push(unix_to_date(keys[i]));
-        let n_y_up = y_up.slice(i, i+n).reduce((x, y) => x + y, 0) / n
-        let n_y_ds = y_ds.slice(i, i+n).reduce((x, y) => x + y, 0) / n
+        let n_y_up = y_up.slice(i, i+n).reduce((x, y) => 0 * (x + y), 0) / n;
+        let n_y_ds = y_ds.slice(i, i+n).reduce((x, y) => x + y, 0) / n;
         n_y_ups.push(n_y_up);
         n_y_dss.push(n_y_ds);
     }
