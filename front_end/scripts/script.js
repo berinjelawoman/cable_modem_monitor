@@ -202,6 +202,7 @@ function addInfo(data) {
     let mkeys = Object.keys(data);
     let lastData = data[mkeys[mkeys.length - 1]];
 
+    let cm_init = lastData.MAC.filter(state => String(state).includes("init")).length;
     let cm_online = lastData.MAC.filter(state => String(state).includes("online")).length;
     let cm_offline = lastData.MAC.filter(state => String(state).includes("offline")).length;
     let users_online = lastData.Number.filter(x => x > 0).reduce((x, y) => x + y, 0);
@@ -211,11 +212,21 @@ function addInfo(data) {
         .filter((_, i) => String(lastData.MAC[i]).includes("offline"))
         .map(room_n => `Quarto ${room_n}`)
         .slice(0, 10).join("\n");
+    
+    // get list of cms which are initializing
+    let cm_init_string = lastData.Room
+        .filter((_, i) => String(lastData.MAC[i]).includes("init"))
+        .map(room_n => `Quarto ${room_n}`)
+        .slice(0, 10).join("\n");
 
     let text = `<button type="submit" class="btn">Online CMs: ${cm_online}</button>
                 <button type="submit" class="btn ${cm_offline ? "cancel" : ""}" 
-                  title="${cm_offline_string}" onclick="showOfflineModal('${cm_offline_string.split("\n")}', ${cm_offline})">
+                  title="${cm_offline_string}" onclick="showOfflineModal('${cm_offline_string.split("\n")}', ${cm_offline}, 'Offline')">
                     Offline CMs: ${cm_offline}
+                </button>
+                <button type="submit" class="btn ${cm_init ? "cancel" : ""}" 
+                  title="${cm_init_string}" onclick="showOfflineModal('${cm_init_string.split("\n")}', ${cm_init}, 'init')">
+                    Init CMs: ${cm_init}
                 </button>
                 <button type="submit" class="btn">Usuarios ativos: ${users_online}</button>`;
     document.getElementById("info").innerHTML = text;
@@ -227,12 +238,13 @@ function addInfo(data) {
  * 
  * @param {String} offlineCMString a string with comma separated values
  * @param {Number} offlineNumber number of cable modems offline
+ * @param {String} text string to be displayed in the modal
  */
-function showOfflineModal(offlineCMString, offlineNumber) {
+function showOfflineModal(offlineCMString, offlineNumber, text) {
     CONSTANTS.OFFLINE_MODAL.style.display = "block";
 
     CONSTANTS.OFFLINE_MODAL_BODY.innerHTML = offlineCMString.replaceAll(",", "<br>");
-    CONSTANTS.OFFLINE_MODAL_HEADER.innerHTML = `Cable Modems Offline: ${offlineNumber}`;
+    CONSTANTS.OFFLINE_MODAL_HEADER.innerHTML = `Cable Modems ${text}: ${offlineNumber}`;
 }
 
 
