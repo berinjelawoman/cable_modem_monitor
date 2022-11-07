@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import json
 import asyncio
 import websockets
@@ -34,10 +35,13 @@ async def handler(websocket: websockets.server.WebSocketServerProtocol):
     await websocket.send(json.dumps(to_send, separators=(",", ":")))
 
 
-async def main():
-    async with websockets.serve(handler, "", 8001):
+async def main(port: int):
+    async with websockets.serve(handler, "", port):
         await asyncio.Future()  # run forever
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    data_path = sys.argv[-2]
+    port = sys.argv[-1]
+    dp.set_data_folder(data_path)
+    asyncio.run(main(port))
